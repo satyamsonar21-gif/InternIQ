@@ -1,10 +1,13 @@
 import { GoogleGenAI } from '@google/genai'
+import { supabase } from '@/lib/supabase'
 
 export interface GeminiResponse {
   text: string
   citations?: Array<{ title: string; type: string }>
   modelUsed: string
   tokensUsed?: number
+  isFallback?: boolean
+  error?: string
 }
 
 const SYSTEM_INSTRUCTION = `You are Gemini 3.6 Flash, the flagship AI Assistant integrated into InternIQ — the AI-powered enterprise internship lifecycle management platform.
@@ -21,14 +24,31 @@ export async function askGemini36Flash(
   prompt: string,
   context?: { studentName?: string; company?: string; role?: string; score?: number }
 ): Promise<GeminiResponse> {
-  const apiKey =
-    import.meta.env.VITE_GEMINI_API_KEY ||
-    localStorage.getItem('gemini_api_key') ||
-    localStorage.getItem('VITE_GEMINI_API_KEY')
+  // Strategy 1: Attempt Supabase Edge Function invocation (Secure Backend Endpoint)
+  try {
+    const { data, error } = await supabase.functions.invoke('gemini-chat', {
+      body: { prompt, systemInstruction: SYSTEM_INSTRUCTION },
+    })
 
-  if (apiKey) {
+    if (!error && data?.text) {
+      return {
+        text: data.text,
+        citations: data.citations || [
+          { title: 'InternIQ RAG Vector Database', type: 'Live Context' },
+          { title: 'Gemini Knowledge Base', type: 'Secure Server Inference' },
+        ],
+        modelUsed: data.modelUsed || 'Gemini 3.6 Flash (Backend Edge API)',
+      }
+    }
+  } catch (edgeErr) {
+    console.warn('Edge function invocation failed or unavailable, checking environment keys...', edgeErr)
+  }
+
+  // Strategy 2: Direct API call if environment variable VITE_GEMINI_API_KEY is configured
+  const envKey = import.meta.env.VITE_GEMINI_API_KEY
+  if (envKey) {
     try {
-      const ai = new GoogleGenAI({ apiKey })
+      const ai = new GoogleGenAI({ apiKey: envKey })
       const candidateModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
       let response = null
       let usedModelName = 'Gemini 3.6 Flash (Live API)'
@@ -62,13 +82,18 @@ export async function askGemini36Flash(
           modelUsed: usedModelName,
         }
       }
-    } catch (error) {
-      console.warn('Gemini API call encountered issue, falling back to Gemini 3.6 Flash Local Engine:', error)
+    } catch (error: any) {
+      console.warn('Gemini API call failed:', error)
     }
   }
 
-  // Ultra-Smart Local Gemini 3.6 Flash Inference Engine
-  return generateLocalGemini36Response(prompt, context)
+  // Strategy 3: Local Fallback Engine with clear status flag indicating fallback mode
+  const localResult = generateLocalGemini36Response(prompt, context)
+  return {
+    ...localResult,
+    isFallback: true,
+    error: envKey ? 'API rate limit or connection issue. Serving offline intelligence engine.' : 'No remote API key configured. Serving offline intelligence engine.',
+  }
 }
 
 function generateLocalGemini36Response(
@@ -107,7 +132,7 @@ function generateLocalGemini36Response(
         { title: 'Work Log #001 & #002 Records', type: 'Work Logs' },
         { title: 'Industry Evaluation Benchmarks', type: 'Analytics' },
       ],
-      modelUsed: 'Gemini 3.6 Flash (Enterprise NLU Engine)',
+      modelUsed: 'Gemini 3.6 Flash (Offline Engine)',
     }
   }
 
@@ -161,7 +186,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoading(false);
     });
 
-    // 2. Listen for auth state state changes (JWT refresh, sign out, sign in)
+    // 2. Listen for auth state changes (JWT refresh, sign out, sign in)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setIsLoading(false);
@@ -203,7 +228,7 @@ export const useAuth = () => {
         { title: 'React 19 & Supabase Auth Specs', type: 'Architecture' },
         { title: 'InternIQ RAG Code Repositories', type: 'Source Code' },
       ],
-      modelUsed: 'Gemini 3.6 Flash (Code Intelligence Engine)',
+      modelUsed: 'Gemini 3.6 Flash (Offline Code Engine)',
     }
   }
 
@@ -247,7 +272,7 @@ export const useAuth = () => {
         { title: 'Faculty Review #004', type: 'Feedback' },
         { title: 'Industry Rating Record #001', type: 'Feedback' },
       ],
-      modelUsed: 'Gemini 3.6 Flash (Mentorship Engine)',
+      modelUsed: 'Gemini 3.6 Flash (Offline Mentorship Engine)',
     }
   }
 
@@ -278,7 +303,7 @@ export const useAuth = () => {
         { title: 'Placement Cell Interview Guide', type: 'Career Resources' },
         { title: 'InternIQ Skill Radar', type: 'Analytics' },
       ],
-      modelUsed: 'Gemini 3.6 Flash (Career Intelligence Engine)',
+      modelUsed: 'Gemini 3.6 Flash (Offline Career Engine)',
     }
   }
 
@@ -316,6 +341,6 @@ export const verifyInternshipTask = async (taskId: string, deliverables: string[
       { title: 'InternIQ RAG Vector Database', type: 'Knowledge System' },
       { title: 'Gemini 3.6 Inference Engine', type: 'AI Model' },
     ],
-    modelUsed: 'Gemini 3.6 Flash (Universal NLU Engine)',
+    modelUsed: 'Gemini 3.6 Flash (Offline Engine)',
   }
 }

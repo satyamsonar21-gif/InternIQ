@@ -294,8 +294,19 @@ CREATE INDEX idx_audit_logs_action ON audit_logs(action_type);
 CREATE INDEX idx_audit_logs_created ON audit_logs(created_at DESC);
 
 -- ============================================
--- Row Level Security (RLS) Policies
+-- Helper Functions & Row Level Security (RLS) Policies
 -- ============================================
+
+-- Helper function to bypass RLS during admin checks and prevent infinite recursion
+CREATE OR REPLACE FUNCTION public.is_admin(user_id UUID)
+RETURNS BOOLEAN SECURITY DEFINER AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = user_id AND role = 'admin'
+  );
+END;
+$$ LANGUAGE plpgsql;
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE departments ENABLE ROW LEVEL SECURITY;
@@ -320,9 +331,7 @@ CREATE POLICY "Users can view own profile"
 
 CREATE POLICY "Admins can view all profiles"
   ON profiles FOR SELECT
-  USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-  );
+  USING (public.is_admin(auth.uid()));
 
 CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
@@ -330,9 +339,7 @@ CREATE POLICY "Users can update own profile"
 
 CREATE POLICY "Admins can update any profile"
   ON profiles FOR UPDATE
-  USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-  );
+  USING (public.is_admin(auth.uid()));
 
 -- Departments & Batches: Authenticated read; Admin write
 CREATE POLICY "Authenticated users can view departments"
@@ -341,9 +348,7 @@ CREATE POLICY "Authenticated users can view departments"
 
 CREATE POLICY "Admins can manage departments"
   ON departments FOR ALL
-  USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-  );
+  USING (public.is_admin(auth.uid()));
 
 CREATE POLICY "Authenticated users can view batches"
   ON batches FOR SELECT
@@ -351,9 +356,7 @@ CREATE POLICY "Authenticated users can view batches"
 
 CREATE POLICY "Admins can manage batches"
   ON batches FOR ALL
-  USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-  );
+  USING (public.is_admin(auth.uid()));
 
 -- Companies: Authenticated read; Admin and Industry Mentor write
 CREATE POLICY "Authenticated users can view companies"
@@ -362,9 +365,7 @@ CREATE POLICY "Authenticated users can view companies"
 
 CREATE POLICY "Admins can manage companies"
   ON companies FOR ALL
-  USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-  );
+  USING (public.is_admin(auth.uid()));
 
 -- Internships: Student sees own; Faculty sees assigned; Industry Mentor sees company; Admin sees all
 CREATE POLICY "Students can view own internships"
@@ -381,9 +382,7 @@ CREATE POLICY "Industry mentors can view company internships"
 
 CREATE POLICY "Admins can manage all internships"
   ON internships FOR ALL
-  USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-  );
+  USING (public.is_admin(auth.uid()));
 
 -- Work Logs: Student CRUD own; Mentors read/update assigned
 CREATE POLICY "Students can manage own work logs"
@@ -422,9 +421,7 @@ CREATE POLICY "Users can update own notifications"
 -- Audit Logs: Admin read only
 CREATE POLICY "Admins can view audit logs"
   ON audit_logs FOR SELECT
-  USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-  );
+  USING (public.is_admin(auth.uid()));
 
 -- ============================================
 -- Triggers

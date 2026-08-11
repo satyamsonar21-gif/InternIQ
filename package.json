@@ -1,5 +1,6 @@
 {
-  "name": "jalgone-hackthon",
+  "name": "intern-iq",
+  "description": "An AI-powered internship and placement preparation platform",
   "private": true,
   "version": "0.0.0",
   "type": "module",

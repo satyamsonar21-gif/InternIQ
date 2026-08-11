@@ -7,10 +7,11 @@ import {
   User,
   Trash2,
   Database,
-  Key,
   Copy,
   Check,
   Zap,
+  AlertTriangle,
+  Server,
 } from 'lucide-react'
 import { askGemini36Flash, type GeminiResponse } from '@/lib/gemini'
 import { useAuth } from '@/contexts/AuthContext'
@@ -22,6 +23,8 @@ interface ChatMessage {
   timestamp: string
   citations?: Array<{ title: string; type: string }>
   modelUsed?: string
+  isFallback?: boolean
+  error?: string
 }
 
 const INITIAL_MESSAGES: ChatMessage[] = [
@@ -63,9 +66,7 @@ export default function StudentAIAssistantPage() {
   const [inputQuery, setInputQuery] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false)
-  const [customApiKey, setCustomApiKey] = useState(localStorage.getItem('gemini_api_key') || '')
-  const [keySavedToast, setKeySavedToast] = useState(false)
+  const [statusToast, setStatusToast] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -75,17 +76,6 @@ export default function StudentAIAssistantPage() {
   useEffect(() => {
     scrollToBottom()
   }, [messages, isTyping])
-
-  const handleSaveApiKey = () => {
-    if (customApiKey.trim()) {
-      localStorage.setItem('gemini_api_key', customApiKey.trim())
-    } else {
-      localStorage.removeItem('gemini_api_key')
-    }
-    setKeySavedToast(true)
-    setShowApiKeyInput(false)
-    setTimeout(() => setKeySavedToast(false), 2000)
-  }
 
   const handleSend = async (queryText?: string) => {
     const textToSend = queryText || inputQuery
@@ -110,6 +100,11 @@ export default function StudentAIAssistantPage() {
         score: 78,
       })
 
+      if (response.isFallback && response.error) {
+        setStatusToast(response.error)
+        setTimeout(() => setStatusToast(null), 3500)
+      }
+
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
         sender: 'ai',
@@ -117,17 +112,23 @@ export default function StudentAIAssistantPage() {
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         citations: response.citations,
         modelUsed: response.modelUsed,
+        isFallback: response.isFallback,
+        error: response.error,
       }
 
       setMessages((prev) => [...prev, aiMsg])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating AI response:', error)
+      setStatusToast('AI Service Error: Request failed. Served offline backup engine.')
+      setTimeout(() => setStatusToast(null), 3500)
+
       const errorMsg: ChatMessage = {
         id: `err-${Date.now()}`,
         sender: 'ai',
-        text: '### ⚠️ Processing Note\n\nGemini 3.6 Flash encountered a temporary network issue. Please re-send your query.',
+        text: '### ⚠️ Service Notice\n\nGemini AI API encountered a network or rate limit issue. Served response via InternIQ local intelligence engine.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        modelUsed: 'Gemini 3.6 Flash Error Handler',
+        modelUsed: 'Gemini 3.6 Flash (Offline Backup Engine)',
+        isFallback: true,
       }
       setMessages((prev) => [...prev, errorMsg])
     } finally {
@@ -161,21 +162,12 @@ export default function StudentAIAssistantPage() {
               </span>
             </div>
             <p className="text-[10px] text-[#9A3412] font-mono">
-              Ultra-Strong Reasoning Engine • Context: {user?.full_name || 'Arjun Mehta'} (TechVista Solutions)
+              Secure Edge Function Engine • Context: {user?.full_name || 'Arjun Mehta'} (TechVista Solutions)
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowApiKeyInput(!showApiKeyInput)}
-            className="p-2 text-[#9A3412] hover:text-[#EA580C] hover:bg-[#F97316]/10 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold"
-            title="Configure Gemini API Key"
-          >
-            <Key className="w-4 h-4 text-[#F97316]" />
-            <span className="hidden sm:inline">API Settings</span>
-          </button>
-
           <button
             onClick={handleClear}
             className="p-2 text-[#9A3412] hover:text-[#EF4444] hover:bg-[#EF4444]/10 rounded-xl transition-all"
@@ -186,53 +178,16 @@ export default function StudentAIAssistantPage() {
         </div>
       </div>
 
-      {/* API Key Settings Drawer */}
+      {/* Status / Fallback Notice Toast */}
       <AnimatePresence>
-        {showApiKeyInput && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="px-6 py-3 bg-[#FFF7ED] border-b border-[#FED7AA] flex items-center justify-between gap-3 text-xs"
-          >
-            <div className="flex items-center gap-2 flex-1">
-              <Key className="w-4 h-4 text-[#F97316]" />
-              <input
-                type="password"
-                placeholder="Paste optional Gemini API Key (AIzaSy...)"
-                value={customApiKey}
-                onChange={(e) => setCustomApiKey(e.target.value)}
-                className="flex-1 h-9 bg-white border border-[#FED7AA] rounded-xl px-3 text-xs text-[#431407] focus:border-[#F97316]"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleSaveApiKey}
-                className="px-4 h-9 bg-[#F97316] hover:bg-[#EA580C] text-white font-semibold rounded-xl text-xs shadow-sm"
-              >
-                Save Key
-              </button>
-              <button
-                onClick={() => setShowApiKeyInput(false)}
-                className="px-3 h-9 border border-[#FED7AA] text-[#9A3412] hover:bg-white rounded-xl text-xs"
-              >
-                Cancel
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Saved Key Toast */}
-      <AnimatePresence>
-        {keySavedToast && (
+        {statusToast && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="px-6 py-2 bg-[#10B981]/10 border-b border-[#10B981]/30 text-xs font-semibold text-[#047857] flex items-center gap-2"
+            className="px-6 py-2.5 bg-amber-500 text-white text-xs font-bold flex items-center gap-2 shadow-md z-20"
           >
-            <Check className="w-4 h-4 text-[#10B981]" /> Gemini API Key settings updated successfully!
+            <AlertTriangle className="w-4 h-4" /> {statusToast}
           </motion.div>
         )}
       </AnimatePresence>
@@ -285,8 +240,9 @@ export default function StudentAIAssistantPage() {
               {msg.sender === 'ai' && (
                 <div className="flex flex-wrap items-center gap-2 pt-0.5">
                   {msg.modelUsed && (
-                    <span className="text-[10px] font-mono text-[#EA580C] bg-[#F97316]/10 border border-[#F97316]/30 px-2 py-0.5 rounded-md flex items-center gap-1 font-semibold">
-                      <Sparkles className="w-3 h-3" /> {msg.modelUsed}
+                    <span className={`text-[10px] font-mono border px-2 py-0.5 rounded-md flex items-center gap-1 font-semibold ${msg.isFallback ? 'bg-amber-50 text-amber-800 border-amber-300' : 'bg-[#F97316]/10 text-[#EA580C] border-[#F97316]/30'}`}>
+                      {msg.isFallback ? <Server className="w-3 h-3 text-amber-600" /> : <Sparkles className="w-3 h-3 text-[#F97316]" />}
+                      {msg.modelUsed}
                     </span>
                   )}
 

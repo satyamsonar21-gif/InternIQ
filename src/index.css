@@ -1,0 +1,159 @@
+@import "tailwindcss";
+
+/* ============================================
+   InternIQ Design System — "The Visionary"
+   Light, Accessible, Role-Based Palettes
+   ============================================ */
+
+@theme {
+  /* Student Palette (Energy & Ambition — Vibrant Mango) */
+  --color-student-bg: #FFF7ED;
+  --color-student-surface: #FFFFFF;
+  --color-student-accent: #F97316;
+  --color-student-accent-hover: #EA580C;
+  --color-student-text: #431407;
+  --color-student-text-muted: #9A3412;
+  --color-student-border: #FED7AA;
+
+  /* Faculty Palette (Focus & Depth — Peacock Teal) */
+  --color-faculty-bg: #F0FDFA;
+  --color-faculty-surface: #FFFFFF;
+  --color-faculty-accent: #0D9488;
+  --color-faculty-accent-hover: #0F766E;
+  --color-faculty-text: #042F2E;
+  --color-faculty-text-muted: #115E59;
+  --color-faculty-border: #CCFBF1;
+
+  /* Industry Palette (Premium & Exclusive — Rich Plum) */
+  --color-industry-bg: #FDF4FF;
+  --color-industry-surface: #FFFFFF;
+  --color-industry-accent: #701A75;
+  --color-industry-accent-hover: #581C87;
+  --color-industry-text: #3B0764;
+  --color-industry-text-muted: #6B21A8;
+  --color-industry-border: #F5D0FE;
+
+  /* Neutral Palette (Admin / Shared / Auth) */
+  --color-neutral-bg: #FAFAFA;
+  --color-neutral-surface: #FFFFFF;
+  --color-neutral-accent: #18181B;
+  --color-neutral-accent-hover: #27272A;
+  --color-neutral-text: #09090B;
+  --color-neutral-text-muted: #52525B;
+  --color-neutral-border: #E4E4E7;
+
+  /* System Functional Colors */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+
+  /* Font Families */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Base Scrollbars & Body */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 #F1F5F9;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #FAFAFA;
+  color: #09090B;
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Visionary Light Cards */
+.vision-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+}
+
+.vision-card-hover {
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vision-card-hover:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  transform: translateY(-2px);
+}
+
+/* Role Theme Root Classes */
+.theme-student {
+  background-color: #FFF7ED;
+  color: #431407;
+}
+
+.theme-faculty {
+  background-color: #F0FDFA;
+  color: #042F2E;
+}
+
+.theme-industry {
+  background-color: #FDF4FF;
+  color: #3B0764;
+}
+
+.theme-admin, .theme-shared {
+  background-color: #FAFAFA;
+  color: #09090B;
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+}
+
+/* Inputs Focus Styles */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  ring: 2px;
+}
+
+/* Shimmer Loading */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(226, 232, 240, 0.6) 25%,
+    rgba(203, 213, 225, 0.8) 50%,
+    rgba(226, 232, 240, 0.6) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 0.5rem;
+}

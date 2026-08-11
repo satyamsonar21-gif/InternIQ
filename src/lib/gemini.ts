@@ -26,8 +26,8 @@ export async function askGemini36Flash(
 ): Promise<GeminiResponse> {
   // Strategy 1: Attempt Supabase Edge Function invocation (Secure Backend Endpoint)
   try {
-    const { data, error } = await supabase.functions.invoke('gemini-chat', {
-      body: { prompt, systemInstruction: SYSTEM_INSTRUCTION },
+    const { data, error } = await supabase.functions.invoke('gemini-ai', {
+      body: { prompt, model: 'gemini-2.5-flash', systemInstruction: SYSTEM_INSTRUCTION },
     })
 
     if (!error && data?.text) {

@@ -31,6 +31,8 @@ const DashboardRouter = lazy(() => import('@/pages/dashboard/DashboardRouter'))
 const AdminDashboard = lazy(() => import('@/pages/dashboard/AdminDashboard'))
 const ProfilePage = lazy(() => import('@/pages/shared/ProfilePage'))
 const NotificationsPage = lazy(() => import('@/pages/shared/NotificationsPage'))
+const NotFoundPage = lazy(() => import('@/pages/shared/NotFoundPage'))
+const UnauthorizedPage = lazy(() => import('@/pages/shared/UnauthorizedPage'))
 
 // Student pages (Phase 2 — placeholder for now)
 const StudentWorkLogNew = lazy(() => import('@/pages/student/WorkLogNewPage'))
@@ -211,9 +213,18 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // Catch-all redirect
+  // Error & Authorization status pages
+  {
+    path: '/unauthorized',
+    element: <SuspenseWrapper><UnauthorizedPage /></SuspenseWrapper>,
+  },
+  {
+    path: '/404',
+    element: <SuspenseWrapper><NotFoundPage /></SuspenseWrapper>,
+  },
+  // Catch-all 404 route
   {
     path: '*',
-    element: <Navigate to="/" replace />,
+    element: <SuspenseWrapper><NotFoundPage /></SuspenseWrapper>,
   },
 ])

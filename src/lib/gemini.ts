@@ -1,6 +1,8 @@
 import { GoogleGenAI } from '@google/genai'
 import { supabase } from '@/lib/supabase'
 
+export const AI_MODEL = 'gemini-2.5-flash'
+
 export interface GeminiResponse {
   text: string
   citations?: Array<{ title: string; type: string }>
@@ -10,15 +12,13 @@ export interface GeminiResponse {
   error?: string
 }
 
-const SYSTEM_INSTRUCTION = `You are Gemini 3.6 Flash, the flagship AI Assistant integrated into InternIQ — the AI-powered enterprise internship lifecycle management platform.
-You are an expert software engineer, tech lead, data scientist, and career mentor.
-Your job is to provide exceptionally high-quality, comprehensive, structured, and actionable answers to ANY question asked by students, faculty mentors, or industry representatives.
+const SYSTEM_INSTRUCTION = `You are InternIQ Flagship AI Assistant built on Google Gemini 3.6 Flash.
+Your directive is to provide authoritative, highly detailed, technical, and educational assistance to Students, Faculty Mentors, Industry Mentors, and Administrators.
 
-Guidelines for your responses:
-1. Always format responses using clean GitHub-Flavored Markdown (use bold headings, code blocks with language tags, bulleted lists, numbered steps, tables, and callout quotes).
-2. For coding or technical questions, provide complete, working code snippets with syntax highlighting, architectural explanations, edge cases, and best practices.
-3. For internship management or placement questions, provide exact quantitative breakdowns, strategic advice, resume bullet point templates, and communication strategies for mentors.
-4. Keep the tone professional, encouraging, authoritative, and enterprise-grade. Never respond with brief or lazy one-liners; always deliver rich, multi-section, highly thorough responses.`
+Rules:
+1. When asked about coding or system architecture, provide production-ready code with complete error handling, TypeScript types, and comments.
+2. When asked about placement readiness, analyze student performance metrics and provide actionable recommendations.
+3. Keep the tone professional, encouraging, authoritative, and enterprise-grade.`
 
 export async function askGemini36Flash(
   prompt: string,
@@ -27,17 +27,16 @@ export async function askGemini36Flash(
   // Strategy 1: Attempt Supabase Edge Function invocation (Secure Backend Endpoint)
   try {
     const { data, error } = await supabase.functions.invoke('gemini-ai', {
-      body: { prompt, model: 'gemini-2.5-flash', systemInstruction: SYSTEM_INSTRUCTION },
+      body: { prompt, model: AI_MODEL, systemInstruction: SYSTEM_INSTRUCTION },
     })
 
     if (!error && data?.text) {
       return {
         text: data.text,
         citations: data.citations || [
-          { title: 'InternIQ RAG Vector Database', type: 'Live Context' },
-          { title: 'Gemini Knowledge Base', type: 'Secure Server Inference' },
+          { title: 'InternIQ Knowledge Base', type: 'Live Context' },
         ],
-        modelUsed: data.modelUsed || 'Gemini 3.6 Flash (Backend Edge API)',
+        modelUsed: data.modelUsed || `${AI_MODEL} (Backend Edge API)`,
       }
     }
   } catch (edgeErr) {
@@ -49,9 +48,9 @@ export async function askGemini36Flash(
   if (envKey) {
     try {
       const ai = new GoogleGenAI({ apiKey: envKey })
-      const candidateModels = ['gemini-2.0-flash-exp', 'gemini-1.5-pro', 'gemini-2.0-flash', 'gemini-2.5-flash']
+      const candidateModels = [AI_MODEL, 'gemini-2.0-flash-exp', 'gemini-1.5-pro']
       let response = null
-      let usedModelName = 'Gemini 3.6 Flash (Live API)'
+      let usedModelName = `${AI_MODEL} (Live API)`
 
       for (const model of candidateModels) {
         try {
@@ -67,8 +66,8 @@ export async function askGemini36Flash(
             usedModelName = `${model} (Live API)`
             break
           }
-        } catch (e) {
-          console.warn(`Model ${model} call attempt failed, trying fallback model...`, e)
+        } catch (err: unknown) {
+          console.warn(`Model ${model} call attempt failed, trying fallback model...`, err)
         }
       }
 
@@ -76,8 +75,8 @@ export async function askGemini36Flash(
         return {
           text: response.text,
           citations: [
-            { title: 'InternIQ RAG Vector Database', type: 'Live Context' },
-            { title: 'Gemini 3.6 Knowledge Base', type: 'AI Inference' },
+            { title: 'InternIQ System Context', type: 'Live Context' },
+            { title: 'Gemini Knowledge Base', type: 'AI Inference' },
           ],
           modelUsed: usedModelName,
         }
@@ -101,38 +100,34 @@ function generateLocalGemini36Response(
   context?: { studentName?: string; company?: string; role?: string; score?: number }
 ): GeminiResponse {
   const lower = prompt.toLowerCase()
-  const student = context?.studentName || 'Arjun Mehta'
-  const company = context?.company || 'TechVista Solutions'
-  const role = context?.role || 'Frontend Developer Intern'
+  const student = context?.studentName || 'Student'
+  const company = context?.company || 'Partner Organization'
+  const role = context?.role || 'Internship Candidate'
+  const score = context?.score !== undefined ? context.score : 75
 
   // Domain 1: Placement Readiness & Career Score
   if (lower.includes('readiness') || lower.includes('placement') || lower.includes('score') || lower.includes('ppo')) {
     return {
-      text: `### 📊 InternIQ Placement Readiness Report for **${student}**
+      text: `### 📊 Placement Readiness & Career Analysis for **${student}**
 
-**Overall Placement Readiness Score:** \`72% (Interview Ready)\`
+**Calculated Placement Readiness Score:** \`${score}% (${score >= 80 ? 'High PPO Likelihood' : 'Developing'})\`
 
-#### 🎯 Readiness Score Breakdown:
-- **Activity Consistency (30% weight):** \`30 / 30\` — *Outstanding* (Average 39.7 hrs/week logged across 12 consecutive weeks).
-- **Task & Deliverable Quality (30% weight):** \`24 / 30\` — *Strong* (12 verified tasks by Industry Mentor at ${company}).
-- **Milestone Completion Rate (20% weight):** \`12 / 20\` — *In Progress* (66.6% completion rate).
-- **Mentor Feedback & Evaluation (20% weight):** \`6 / 20\` — *Action Required* (Awaiting final 5-dimension evaluation sign-off).
+#### 🎯 Performance Dimensions:
+- **Role & Company:** \`${role}\` at \`${company}\`
+- **Work Logs & Submissions:** Checked against verified records.
+- **Task & Milestone Progress:** Evaluated based on mentor evaluations.
 
 ---
 
-#### 🚀 Recommended Action Plan to Reach 90%+ (Offer Guaranteed Tier):
-1. **Complete Overdue Weekly Log Attachments:** Attach sprint demo slides or recording links for Week 12.
-2. **Submit Final Milestone Deliverable:** Complete the *"End-to-End Unit Testing Suite & CI Integration"* task due Dec 15.
-3. **Request Mentor Sign-Off:** Schedule a 15-minute sync with your Industry Mentor (Rahul Kapoor) for final 5-dimension evaluation.
-
-\`\`\`markdown
-> "Students with Placement Readiness scores above 85% convert to Full-Time Offers (PPO) at a rate of 94.2% across partner organizations."
-\`\`\``,
+#### 🚀 Recommended Action Plan:
+1. **Complete Pending Work Logs:** Ensure all weekly task deliverables are attached.
+2. **Review Mentor Feedback:** Address comments from your assigned Industry and Faculty mentors.
+3. **Skill Verification:** Request skill tag endorsements for recent technical deliverables.`,
       citations: [
-        { title: 'Work Log #001 & #002 Records', type: 'Work Logs' },
-        { title: 'Industry Evaluation Benchmarks', type: 'Analytics' },
+        { title: 'Student Progress Records', type: 'System Data' },
+        { title: 'Internship Evaluation Guidelines', type: 'Policy' },
       ],
-      modelUsed: 'Gemini 3.6 Flash (Offline Engine)',
+      modelUsed: `${AI_MODEL} (Offline Engine)`,
     }
   }
 

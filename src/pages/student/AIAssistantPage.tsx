@@ -246,9 +246,9 @@ export default function StudentAIAssistantPage() {
                     </span>
                   )}
 
-                  {msg.citations?.map((c, i) => (
+                  {msg.citations?.map((c) => (
                     <span
-                      key={i}
+                      key={`${c.type}-${c.title}`}
                       className="inline-flex items-center gap-1 text-[10px] font-mono text-[#9A3412] bg-[#FFF7ED] border border-[#FED7AA] px-2 py-0.5 rounded-md"
                     >
                       <Database className="w-3 h-3 text-[#F97316]" /> {c.type}: {c.title}
@@ -288,9 +288,9 @@ export default function StudentAIAssistantPage() {
         <span className="text-[10px] uppercase font-bold text-[#EA580C] tracking-wider flex items-center gap-1 whitespace-nowrap">
           <Sparkles className="w-3 h-3 text-[#F97316]" /> Gemini Chips:
         </span>
-        {PROMPT_CHIPS.map((chip, idx) => (
+        {PROMPT_CHIPS.map((chip) => (
           <button
-            key={idx}
+            key={chip}
             onClick={() => handleSend(chip)}
             className="px-3 py-1 bg-white hover:bg-[#FFF7ED] border border-[#FED7AA] rounded-full text-xs text-[#9A3412] hover:text-[#431407] whitespace-nowrap transition-all flex items-center gap-1 shadow-sm font-medium"
           >

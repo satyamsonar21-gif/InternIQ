@@ -27,8 +27,8 @@ export default function LoginPage() {
       } else {
         navigate('/dashboard')
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to login. Please check your credentials.')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to login. Please check your credentials.')
     } finally {
       setIsLoading(false)
     }

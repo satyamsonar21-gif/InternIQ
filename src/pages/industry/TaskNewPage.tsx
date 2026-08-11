@@ -17,7 +17,10 @@ export default function IndustryTaskNewPage() {
   const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0])
   const [priority, setPriority] = useState('High')
   const [description, setDescription] = useState('')
-  const [deliverables, setDeliverables] = useState<string[]>(['Setup repository and environment', 'Implement core UI module'])
+  const [deliverables, setDeliverables] = useState<Array<{ id: string; text: string }>>([
+    { id: 'del-1', text: 'Setup repository and environment' },
+    { id: 'del-2', text: 'Implement core UI module' },
+  ])
   const [tags, setTags] = useState<string[]>(['#Frontend', '#React'])
   const [tagInput, setTagInput] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -28,16 +31,15 @@ export default function IndustryTaskNewPage() {
     setSelectedInterns((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]))
   }
 
-  const handleAddDeliverable = () => setDeliverables([...deliverables, ''])
-  const handleRemoveDeliverable = (idx: number) => {
+  const handleAddDeliverable = () =>
+    setDeliverables([...deliverables, { id: `del-${Date.now()}-${Math.random()}`, text: '' }])
+  const handleRemoveDeliverable = (id: string) => {
     if (deliverables.length > 1) {
-      setDeliverables(deliverables.filter((_, i) => i !== idx))
+      setDeliverables(deliverables.filter((d) => d.id !== id))
     }
   }
-  const updateDeliverable = (idx: number, val: string) => {
-    const newDelivs = [...deliverables]
-    newDelivs[idx] = val
-    setDeliverables(newDelivs)
+  const updateDeliverable = (id: string, val: string) => {
+    setDeliverables(deliverables.map((d) => (d.id === id ? { ...d, text: val } : d)))
   }
 
   const handleAddTag = (e: React.KeyboardEvent) => {
@@ -188,16 +190,16 @@ export default function IndustryTaskNewPage() {
           </div>
           <div className="space-y-2">
             {deliverables.map((del, idx) => (
-              <div key={idx} className="flex gap-2 items-center">
+              <div key={del.id} className="flex gap-2 items-center">
                 <input
                   type="text"
-                  value={del}
-                  onChange={(e) => updateDeliverable(idx, e.target.value)}
+                  value={del.text}
+                  onChange={(e) => updateDeliverable(del.id, e.target.value)}
                   placeholder={`Deliverable ${idx + 1}...`}
                   className="flex-1 bg-[#FDF4FF] border border-[#F5D0FE] rounded-xl px-4 py-2 text-xs text-[#4C0519] font-medium focus:outline-none focus:border-[#701A75]"
                 />
                 {deliverables.length > 1 && (
-                  <button onClick={() => handleRemoveDeliverable(idx)} className="p-2 text-[#86198F] hover:text-rose-600">
+                  <button onClick={() => handleRemoveDeliverable(del.id)} className="p-2 text-[#86198F] hover:text-rose-600">
                     <X className="w-4 h-4" />
                   </button>
                 )}

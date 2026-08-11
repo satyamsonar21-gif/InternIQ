@@ -94,9 +94,9 @@ export default function RegisterPage() {
         role: role || 'student',
       })
       navigate('/verify-email')
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Registration failed:', error)
-      setErrorMsg(error?.message || 'Registration failed. Please check your inputs.')
+      setErrorMsg(error instanceof Error ? error.message : 'Registration failed. Please check your inputs.')
     } finally {
       setIsLoading(false)
     }

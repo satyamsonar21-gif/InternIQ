@@ -82,8 +82,8 @@ export async function askGemini36Flash(
           modelUsed: usedModelName,
         }
       }
-    } catch (error: any) {
-      console.warn('Gemini API call failed:', error)
+    } catch (error: unknown) {
+      console.warn('Gemini API call failed:', error instanceof Error ? error.message : error)
     }
   }
 

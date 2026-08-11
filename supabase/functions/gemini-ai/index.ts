@@ -29,7 +29,7 @@ serve(async (req) => {
     }
 
     const ai = new GoogleGenAI({ apiKey })
-    const candidateModels = requestedModel ? [requestedModel, 'gemini-2.5-flash', 'gemini-2.0-flash'] : ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
+    const candidateModels = requestedModel ? [requestedModel, 'gemini-2.0-flash-exp', 'gemini-1.5-pro'] : ['gemini-2.0-flash-exp', 'gemini-1.5-pro', 'gemini-2.0-flash', 'gemini-2.5-flash']
     let resultText = null
     let usedModel = candidateModels[0]
 

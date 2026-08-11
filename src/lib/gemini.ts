@@ -49,7 +49,7 @@ export async function askGemini36Flash(
   if (envKey) {
     try {
       const ai = new GoogleGenAI({ apiKey: envKey })
-      const candidateModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
+      const candidateModels = ['gemini-2.0-flash-exp', 'gemini-1.5-pro', 'gemini-2.0-flash', 'gemini-2.5-flash']
       let response = null
       let usedModelName = 'Gemini 3.6 Flash (Live API)'
 

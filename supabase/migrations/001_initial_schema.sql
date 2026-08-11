@@ -271,6 +271,7 @@ CREATE TABLE knowledge_embeddings (
 CREATE INDEX idx_profiles_role ON profiles(role);
 CREATE INDEX idx_profiles_department ON profiles(department_id);
 CREATE INDEX idx_profiles_company ON profiles(company_id);
+CREATE INDEX idx_batches_department ON batches(department_id);
 CREATE INDEX idx_internships_student ON internships(student_id);
 CREATE INDEX idx_internships_faculty ON internships(faculty_id);
 CREATE INDEX idx_internships_industry_mentor ON internships(industry_mentor_id);
@@ -282,9 +283,13 @@ CREATE INDEX idx_work_logs_status ON work_logs(status);
 CREATE INDEX idx_tasks_internship ON tasks_milestones(internship_id);
 CREATE INDEX idx_tasks_status ON tasks_milestones(status);
 CREATE INDEX idx_task_submissions_task ON task_submissions(task_id);
+CREATE INDEX idx_task_submissions_student ON task_submissions(student_id);
 CREATE INDEX idx_attendance_internship ON attendance_records(internship_id);
+CREATE INDEX idx_attendance_student ON attendance_records(student_id);
 CREATE INDEX idx_documents_internship ON documents(internship_id);
+CREATE INDEX idx_documents_student ON documents(student_id);
 CREATE INDEX idx_evaluations_internship ON evaluations(internship_id);
+CREATE INDEX idx_evaluations_evaluator ON evaluations(evaluator_id);
 CREATE INDEX idx_alerts_student ON alerts(student_id);
 CREATE INDEX idx_alerts_status ON alerts(status);
 CREATE INDEX idx_notifications_user ON notifications(user_id);
@@ -292,6 +297,8 @@ CREATE INDEX idx_notifications_read ON notifications(user_id, is_read);
 CREATE INDEX idx_audit_logs_actor ON audit_logs(actor_id);
 CREATE INDEX idx_audit_logs_action ON audit_logs(action_type);
 CREATE INDEX idx_audit_logs_created ON audit_logs(created_at DESC);
+CREATE INDEX idx_ai_summaries_internship ON ai_summaries(internship_id);
+CREATE INDEX idx_ai_summaries_student ON ai_summaries(student_id);
 
 -- ============================================
 -- Helper Functions & Row Level Security (RLS) Policies

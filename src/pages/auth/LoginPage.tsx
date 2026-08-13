@@ -145,17 +145,31 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-8 pt-6 border-t border-slate-200">
-          <p className="text-center text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">Demo Accounts</p>
+          <p className="text-center text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">Demo Accounts (Click to Instant Login)</p>
           <div className="grid grid-cols-2 gap-2">
             {demoAccounts.map((account) => (
               <button
                 key={account.label}
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   setEmail(account.email)
                   setPassword('password123')
+                  setError('')
+                  setIsLoading(true)
+                  try {
+                    await login(account.email, 'password123')
+                    if (account.email.toLowerCase().includes('admin')) {
+                      navigate('/admin/dashboard')
+                    } else {
+                      navigate('/dashboard')
+                    }
+                  } catch (err: unknown) {
+                    setError(err instanceof Error ? err.message : 'Failed to login with demo account.')
+                  } finally {
+                    setIsLoading(false)
+                  }
                 }}
-                className="text-xs py-2 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 hover:border-slate-400 transition-all text-left font-medium"
+                className="text-xs py-2 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 hover:border-slate-900 hover:bg-slate-100 transition-all text-left font-medium active:scale-95"
               >
                 <span className="block font-bold text-slate-900 mb-0.5">{account.label}</span>
                 <span className="block text-[11px] text-slate-500 truncate">{account.email}</span>

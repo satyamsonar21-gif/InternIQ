@@ -70,30 +70,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let isMounted = true
 
     const initAuth = async () => {
-      // If placeholder credentials are used, restore local demo session if available
+      // First restore local demo session if present
+      const storedDemo = localStorage.getItem('interniq_demo_user')
+      if (storedDemo && isMounted) {
+        try {
+          setUser(JSON.parse(storedDemo))
+          if (isMounted) setIsLoading(false)
+          return
+        } catch {
+          localStorage.removeItem('interniq_demo_user')
+        }
+      }
+
       const isPlaceholder = env.VITE_SUPABASE_URL.includes('placeholder.supabase.co')
       if (isPlaceholder || env.VITE_DEMO_MODE) {
-        const storedDemo = localStorage.getItem('interniq_demo_user')
-        if (storedDemo && isMounted) {
-          try {
-            setUser(JSON.parse(storedDemo))
-          } catch {
-            localStorage.removeItem('interniq_demo_user')
-          }
-        }
         if (isMounted) setIsLoading(false)
         return
       }
 
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
 
-      if (session?.user && isMounted) {
-        const profile = await fetchProfile(session.user.id, session.user.email || '')
-        if (isMounted) setUser(profile)
+        if (session?.user && isMounted) {
+          const profile = await fetchProfile(session.user.id, session.user.email || '')
+          if (isMounted) setUser(profile)
+        }
+      } catch (err) {
+        console.warn('Supabase auth session fetch warning:', err)
+      } finally {
+        if (isMounted) setIsLoading(false)
       }
-      if (isMounted) setIsLoading(false)
     }
 
     initAuth()
@@ -102,6 +110,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!isMounted) return
+      const storedDemo = localStorage.getItem('interniq_demo_user')
+      if (storedDemo) {
+        // Active demo session takes precedence
+        setIsLoading(false)
+        return
+      }
       if (session?.user) {
         const profile = await fetchProfile(session.user.id, session.user.email || '')
         setUser(profile)
@@ -119,36 +133,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     setIsLoading(true)
+    const normalizedEmail = email.trim().toLowerCase()
     const isPlaceholder = env.VITE_SUPABASE_URL.includes('placeholder.supabase.co')
+    const demoProfile = DEMO_USERS[normalizedEmail]
 
-    if (isPlaceholder || env.VITE_DEMO_MODE) {
-      // Explicit demo mode login fallback
-      await new Promise((r) => setTimeout(r, 600))
-      const demoProfile = DEMO_USERS[email.toLowerCase()]
-      if (!demoProfile) {
+    if (demoProfile || isPlaceholder || env.VITE_DEMO_MODE) {
+      // Explicit demo user or demo mode fallback
+      await new Promise((r) => setTimeout(r, 400))
+      const targetProfile = demoProfile || DEMO_USERS['student@interniq.io']
+      if (!targetProfile) {
         setIsLoading(false)
         throw new Error('Invalid email or password. Demo accounts: student@interniq.io, faculty@interniq.io, industry@interniq.io, admin@interniq.io')
       }
-      setUser(demoProfile)
-      localStorage.setItem('interniq_demo_user', JSON.stringify(demoProfile))
+      setUser(targetProfile)
+      localStorage.setItem('interniq_demo_user', JSON.stringify(targetProfile))
       setIsLoading(false)
       return
     }
 
     // Authentic Supabase Auth Authentication
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      })
 
-    if (error || !data.user) {
+      if (error || !data.user) {
+        if (demoProfile) {
+          setUser(demoProfile)
+          localStorage.setItem('interniq_demo_user', JSON.stringify(demoProfile))
+          setIsLoading(false)
+          return
+        }
+        setIsLoading(false)
+        throw new Error(error?.message || 'Failed to authenticate with Supabase.')
+      }
+
+      const profile = await fetchProfile(data.user.id, data.user.email || email)
+      setUser(profile)
+    } catch (err: unknown) {
+      if (demoProfile) {
+        setUser(demoProfile)
+        localStorage.setItem('interniq_demo_user', JSON.stringify(demoProfile))
+        setIsLoading(false)
+        return
+      }
       setIsLoading(false)
-      throw new Error(error?.message || 'Failed to authenticate with Supabase.')
+      throw err
+    } finally {
+      setIsLoading(false)
     }
-
-    const profile = await fetchProfile(data.user.id, data.user.email || email)
-    setUser(profile)
-    setIsLoading(false)
   }
 
   const register = async (data: RegisterData) => {
@@ -156,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const isPlaceholder = env.VITE_SUPABASE_URL.includes('placeholder.supabase.co')
 
     if (isPlaceholder || env.VITE_DEMO_MODE) {
-      await new Promise((r) => setTimeout(r, 600))
+      await new Promise((r) => setTimeout(r, 400))
       const demoProfile: UserProfile = {
         id: `usr_${Date.now()}`,
         full_name: data.full_name,
@@ -223,7 +257,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('interniq_demo_user')
     const isPlaceholder = env.VITE_SUPABASE_URL.includes('placeholder.supabase.co')
     if (!isPlaceholder && !env.VITE_DEMO_MODE) {
-      await supabase.auth.signOut()
+      await supabase.auth.signOut().catch(() => {})
     }
     setUser(null)
   }
@@ -233,8 +267,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const updated = { ...user, ...updates }
       setUser(updated)
 
+      const storedDemo = localStorage.getItem('interniq_demo_user')
       const isPlaceholder = env.VITE_SUPABASE_URL.includes('placeholder.supabase.co')
-      if (isPlaceholder || env.VITE_DEMO_MODE) {
+      if (storedDemo || isPlaceholder || env.VITE_DEMO_MODE || user.id.startsWith('usr_')) {
         localStorage.setItem('interniq_demo_user', JSON.stringify(updated))
       } else {
         await supabase.from('profiles').update(updates).eq('id', user.id)
